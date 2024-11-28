@@ -1,12 +1,11 @@
 pub mod user;
+pub mod group;
 
 #[derive(Debug)]
 pub enum DatabaseError {
     ConnectionError,
     NotFoundError,
-    
-    UserNotFound,
-    UserAlreadyExists,
+    RegisterAlreadyExists,
 
     WriteLockError,
     ReadLockError,
@@ -17,8 +16,7 @@ impl std::fmt::Display for DatabaseError {
         match self {
             DatabaseError::ConnectionError => write!(f, "Connection error"),
             DatabaseError::NotFoundError => write!(f, "Not found error"),
-            DatabaseError::UserNotFound => write!(f, "User not found"),
-            DatabaseError::UserAlreadyExists => write!(f, "User already exists"),
+            DatabaseError::RegisterAlreadyExists => write!(f, "Register already exists"),
             DatabaseError::WriteLockError => write!(f, "Write lock error"),
             DatabaseError::ReadLockError => write!(f, "Read lock error"),
         }
