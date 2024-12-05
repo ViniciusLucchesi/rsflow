@@ -17,8 +17,8 @@ impl UserService {
         }
     }
 
-    pub fn get_user_by_id(&self, id: String) -> Result<User, DatabaseError> {
-        self.data.get_user_by_id(&id)
+    pub fn get_user_by_id(&self, id: &str) -> Result<User, DatabaseError> {
+        self.data.get_user_by_id(id)
     }
 
     pub fn get_user_by_email(&self, email: &str) -> Result<User, DatabaseError> {
@@ -37,7 +37,7 @@ impl UserService {
         self.data.update_user(user)
     }
 
-    pub fn delete_user(&self, id: String) -> Result<(), DatabaseError> {
-        self.data.delete_user(&id)
+    pub fn delete_user(&self, id: &str) -> Result<(), DatabaseError> {
+        self.data.delete_user(id)
     }
 }
