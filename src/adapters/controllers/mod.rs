@@ -2,6 +2,7 @@ use crate::core::interfaces::database::DatabaseError;
 
 pub mod user_controller;
 pub mod group_controller;
+pub mod user_group_controller;
 
 pub struct ErrorResponse {
     pub message: String,
