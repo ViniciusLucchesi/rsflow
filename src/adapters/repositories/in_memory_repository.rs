@@ -184,7 +184,7 @@ impl GroupRepository for InMemoryGroupRepository {
         // Acquire read lock on the main HashMap to find the specific group
         let data = self.data.read().map_err(|_| DatabaseError::ReadLockError)?;
 
-        if let Some(group_lock) = data.get(group.id.value()) {
+        if let Some(group_lock) = data.get(&group.id.value()) {
             // Acquire write lock on the specific Group entry to modify it
             let mut group_entry = group_lock.write().map_err(|_| DatabaseError::WriteLockError)?;
             *group_entry = group.clone();
