@@ -1,0 +1,88 @@
+use axum::{
+    routing::{get, post}, 
+    extract::{Path, State, Json},
+    http::StatusCode,
+    response::IntoResponse,
+    Router
+};
+use std::sync::Arc;
+
+use crate::adapters::controllers::user_group_controller::{CreateUserGroupRequest, UserGroupResponse};
+use crate::core::services::user_group_service::UserGroupService;
+use crate::core::models::user_group_model::UserGroup;
+
+
+// Factory function
+pub fn build_routes(service: Arc<UserGroupService>) -> Router {
+    Router::new()
+        .route("/", post(create_user_group))
+        .route("/:id", get(get_user_group_by_id))
+        .route("/user/:user_id", get(get_user_group_by_user_id))
+        .route("/group/:group_id", get(get_user_group_by_group_id))
+        .route("/all", get(get_all_user_groups))
+        .with_state(service)
+}
+
+
+
+// Controller functions
+pub async fn create_user_group(
+    State(service): State<Arc<UserGroupService>>,
+    Json(payload): Json<CreateUserGroupRequest>,
+) -> impl IntoResponse {
+    let user_group = UserGroup::new(&payload.user_id, &payload.group_id).map_err(|e| (StatusCode::BAD_REQUEST, Json(e.to_string())))?;
+    match service.create_user_group(user_group) {
+        Ok(created_user_group) => Ok((StatusCode::CREATED, Json(UserGroupResponse::from(created_user_group)))),
+        Err(error) => Err((StatusCode::BAD_REQUEST, Json(error.to_string()))),
+    }
+}
+
+pub async fn update_user_group(
+    State(service): State<Arc<UserGroupService>>,
+    Json(payload): Json<UserGroupResponse>,
+) -> impl IntoResponse {
+    let user_group = UserGroup::new(&payload.user_id, &payload.group_id).map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))?;
+    match service.update_user_group(user_group) {
+        Ok(updated_user_group) => Ok((StatusCode::CREATED, Json(UserGroupResponse::from(updated_user_group)))),
+        Err(e) => Err((StatusCode::BAD_REQUEST, e.to_string())),
+    }
+}
+
+pub async fn delete_user_group(
+    State(service): State<Arc<UserGroupService>>,
+    Path(id): Path<String>,
+) -> impl IntoResponse {
+    match service.delete_user_group(&id) {
+        Ok(_) => Ok(StatusCode::NO_CONTENT),
+        Err(e) => Err((StatusCode::BAD_REQUEST, e.to_string())),
+    }
+}
+
+pub async fn get_user_group_by_id(
+    State(service): State<Arc<UserGroupService>>,
+    Path(id): Path<String>,
+) -> Result<Json<UserGroupResponse>, String> {
+    let user_group = service.get_user_group_by_id(&id).map_err(|e| e.to_string())?;
+    Ok(Json(UserGroupResponse::from(user_group)))
+}
+
+pub async fn get_user_group_by_user_id(
+    State(service): State<Arc<UserGroupService>>,
+    Path(user_id): Path<String>,
+) -> Result<Json<Vec<UserGroupResponse>>, String> {
+    let user_groups = service.get_user_group_by_user_id(&user_id).map_err(|e| e.to_string())?;
+    Ok(Json(user_groups.into_iter().map(UserGroupResponse::from).collect()))
+}
+
+pub async fn get_user_group_by_group_id(
+    State(service): State<Arc<UserGroupService>>,
+    Path(group_id): Path<String>,
+) -> Result<Json<Vec<UserGroupResponse>>, String> {
+    let user_groups = service.get_user_group_by_group_id(&group_id).map_err(|e| e.to_string())?;
+    Ok(Json(user_groups.into_iter().map(UserGroupResponse::from).collect()))
+}
+
+pub async fn get_all_user_groups(State(service): State<Arc<UserGroupService>>) -> Result<Json<Vec<UserGroupResponse>>, String> {
+    let user_groups = service.get_all_user_groups().map_err(|e| e.to_string())?;
+    Ok(Json(user_groups.into_iter().map(UserGroupResponse::from).collect()))
+}

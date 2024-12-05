@@ -17,7 +17,7 @@ pub fn build_routes(service: Arc<GroupService>) -> Router {
     Router::new()
         .route("/", post(create_group))
         .route("/:id", get(get_group_by_id))
-        .route("/all-groups", get(get_all_groups))
+        .route("/all", get(get_all_groups))
         .with_state(service)
 }
 
