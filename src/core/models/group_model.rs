@@ -16,17 +16,22 @@ impl Group {
 }
 
 #[derive(Debug, Clone)]
-pub struct GroupId(String);
+pub struct GroupId(uuid::Uuid);
 
 impl GroupId {
-    pub fn new() -> Self {
-        let uuid = uuid::Uuid::now_v7();
-        let uuid_string = uuid.hyphenated().to_string();
-        GroupId(uuid_string)
+    pub fn new() -> Self {        
+        GroupId(uuid::Uuid::now_v7())
     }
 
-    pub fn value(&self) -> &str {
-        &self.0
+    pub fn from_string(value: &str) -> Result<Self, &'static str> {
+        match uuid::Uuid::try_parse(value) {
+            Ok(uuid) => Ok(GroupId(uuid)),
+            Err(_) => Err("Invalid UUID string"),
+        }
+    } 
+
+    pub fn value(&self) -> String {
+        self.0.hyphenated().to_string()
     }
 }
 

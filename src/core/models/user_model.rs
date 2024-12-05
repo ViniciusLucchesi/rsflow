@@ -17,17 +17,22 @@ impl User {
 
 
 #[derive(Debug, Clone)]
-pub struct UserId (String);
+pub struct UserId (uuid::Uuid);
 
 impl UserId {
     pub fn new() -> Self {
-        let uuid = uuid::Uuid::now_v7();
-        let uuid_string = uuid.hyphenated().to_string();
-        UserId(uuid_string)
+        UserId(uuid::Uuid::now_v7())
     }
 
-    pub fn value(&self) -> &str {
-        &self.0
+    pub fn from_string(value: &str) -> Result<Self, &'static str> {
+        match uuid::Uuid::try_parse(value) {
+            Ok(uuid) => Ok(UserId(uuid)),
+            Err(_) => Err("Invalid UUID string"),
+        }
+    } 
+
+    pub fn value(&self) -> String {
+        self.0.hyphenated().to_string()
     }
 }
 
@@ -79,10 +84,11 @@ mod tests {
     }
 
     #[test]
-    fn test_user_id_is_uuid_v7() {
-        let user_id = UserId::new();
-        let is_valid = uuid::Uuid::parse_str(user_id.value()).is_ok();
-        assert_eq!(is_valid, true);
+    fn test_user_id_from_string_valid() {
+        let uuid_string = "550e8400-e29b-41d4-a716-446655440000";
+        let user_id = UserId::from_string(uuid_string);
+        assert!(user_id.is_ok());
+        assert_eq!(user_id.unwrap().value(), uuid_string);
     }
 
     #[test]
