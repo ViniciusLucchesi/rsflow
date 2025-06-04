@@ -6,6 +6,9 @@ use axum::{
     Router
 };
 use std::sync::Arc;
+use utoipa::path;
+use serde_json::json;
+use utoipa::path;
 
 use crate::adapters::controllers::user_group_controller::{CreateUserGroupRequest, UserGroupResponse};
 use crate::core::services::user_group_service::UserGroupService;
@@ -26,6 +29,18 @@ pub fn build_routes(service: Arc<UserGroupService>) -> Router {
 
 
 // Controller functions
+#[utoipa::path(
+    post,
+    path = "/user-groups",
+    request_body = CreateUserGroupRequest,
+    responses(
+        (status = 201, description = "Associação criada", body = UserGroupResponse, example = json!({"id":"f0000000-0000-0000-0000-000000000000","user_id":"11111111-1111-1111-1111-111111111111","group_id":"22222222-2222-2222-2222-222222222222"})),
+        (status = 400, description = "Usuário ou grupo inexistente")
+    ),
+    tag = "UserGroups",
+    summary = "Criar associação usuário-grupo",
+    description = "Verifica se usuário e grupo existem antes de criar a associação"
+)]
 pub async fn create_user_group(
     State(service): State<Arc<UserGroupService>>,
     Json(payload): Json<CreateUserGroupRequest>,
@@ -58,6 +73,18 @@ pub async fn delete_user_group(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/user-groups/{id}",
+    params(("id" = String, Path, description = "Identificador da relação")),
+    responses(
+        (status = 200, description = "Relação encontrada", body = UserGroupResponse),
+        (status = 404, description = "Relação não encontrada")
+    ),
+    tag = "UserGroups",
+    summary = "Buscar relação por id",
+    description = "Retorna a associação usuário-grupo"
+)]
 pub async fn get_user_group_by_id(
     State(service): State<Arc<UserGroupService>>,
     Path(id): Path<String>,
@@ -66,6 +93,17 @@ pub async fn get_user_group_by_id(
     Ok(Json(UserGroupResponse::from(user_group)))
 }
 
+#[utoipa::path(
+    get,
+    path = "/user-groups/user/{user_id}",
+    params(("user_id" = String, Path, description = "Id do usuário")),
+    responses(
+        (status = 200, description = "Relações do usuário", body = [UserGroupResponse])
+    ),
+    tag = "UserGroups",
+    summary = "Listar por usuário",
+    description = "Recupera associações de um usuário"
+)]
 pub async fn get_user_group_by_user_id(
     State(service): State<Arc<UserGroupService>>,
     Path(user_id): Path<String>,
@@ -74,6 +112,17 @@ pub async fn get_user_group_by_user_id(
     Ok(Json(user_groups.into_iter().map(UserGroupResponse::from).collect()))
 }
 
+#[utoipa::path(
+    get,
+    path = "/user-groups/group/{group_id}",
+    params(("group_id" = String, Path, description = "Id do grupo")),
+    responses(
+        (status = 200, description = "Relações do grupo", body = [UserGroupResponse])
+    ),
+    tag = "UserGroups",
+    summary = "Listar por grupo",
+    description = "Recupera associações de um grupo"
+)]
 pub async fn get_user_group_by_group_id(
     State(service): State<Arc<UserGroupService>>,
     Path(group_id): Path<String>,
@@ -82,6 +131,14 @@ pub async fn get_user_group_by_group_id(
     Ok(Json(user_groups.into_iter().map(UserGroupResponse::from).collect()))
 }
 
+#[utoipa::path(
+    get,
+    path = "/user-groups/all",
+    responses((status = 200, description = "Lista de todas as associações", body = [UserGroupResponse])),
+    tag = "UserGroups",
+    summary = "Listar todas as relações",
+    description = "Retorna todas as ligações usuário-grupo"
+)]
 pub async fn get_all_user_groups(State(service): State<Arc<UserGroupService>>) -> Result<Json<Vec<UserGroupResponse>>, String> {
     let user_groups = service.get_all_user_groups().map_err(|e| e.to_string())?;
     Ok(Json(user_groups.into_iter().map(UserGroupResponse::from).collect()))
