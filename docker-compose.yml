@@ -1,0 +1,73 @@
+services:
+  rsflow-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    profiles:
+      - dev
+    container_name: rsflow-dev
+    command: ["cargo", "watch", "-x", "check", "-x", "run"]
+    stdin_open: true
+    tty: true
+    env_file:
+      - .env
+    volumes:
+      - .:/app # Código-fonte
+      - target-dir:/app/target # Cache de compilação
+      - cargo-cache:/root/.cargo/registry # Cache de dependências
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    depends_on:
+      surrealdb:
+        condition: service_healthy
+
+  rsflow-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    profiles:
+      - prod
+    container_name: rsflow-prod
+    env_file:
+      - .env
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    depends_on:
+      surrealdb:
+        condition: service_healthy
+
+  surrealdb:
+    image: surrealdb/surrealdb:v2.2.2
+    container_name: rsflow-surrealdb
+    restart: unless-stopped
+    user: root
+    env_file:
+      - .env
+    ports:
+      - 8000:8000
+    volumes:
+      - db-data:/var/lib/surrealdb/data
+    entrypoint:
+      - /surreal
+      - start
+      - --allow-experimental
+      - record_references
+      - --user
+      - $SURREALDB_USERNAME
+      - --pass
+      - $SURREALDB_PASSWORD
+      - rocksdb:/var/lib/surrealdb/surrealdb.db
+    healthcheck:
+      test: ["CMD", "/surreal", "isready", "--conn", "http://localhost:8000"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+      start_period: 3s
+
+volumes:
+  db-data:
+  cargo-cache:
+  target-dir:
