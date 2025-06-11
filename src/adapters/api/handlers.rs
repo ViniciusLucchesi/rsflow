@@ -7,6 +7,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
+use super::error::ApiError;
 use crate::domain::models::user_model::User;
 use crate::domain::services::user_service::UserService;
 
@@ -36,18 +37,18 @@ impl From<User> for UserResponse {
 pub async fn create_user(
     State(service): State<Arc<dyn UserService>>,
     Json(payload): Json<CreateUserRequest>,
-) -> Result<Json<UserResponse>, String> {
+) -> Result<Json<UserResponse>, ApiError> {
     let user = User::new(&payload.name, &payload.email).map_err(|e| e.to_string())?;
     match service.create_user(user).await {
         Ok(created_user) => Ok(Json(UserResponse::from(created_user))),
-        Err(e) => Err(e.to_string()),
+        Err(e) => Err(e.into()),
     }
 }
 
 pub async fn get_user(
     State(service): State<Arc<dyn UserService>>,
     Path(id): Path<String>,
-) -> Result<Json<UserResponse>, String> {
+) -> Result<Json<UserResponse>, ApiError> {
     let user = service
         .get_user_by_id(id)
         .await
@@ -57,8 +58,9 @@ pub async fn get_user(
 
 pub async fn get_all_users(
     State(service): State<Arc<dyn UserService>>,
-) -> Result<Json<Vec<UserResponse>>, String> {
-    let users = service.get_all_users().await.map_err(|e| e.to_string())?;
+) -> Result<Json<Vec<UserResponse>>, ApiError> {
+    let users = service.get_all_users().await.map_err(ApiError::from)?;
+
     Ok(Json(users.into_iter().map(UserResponse::from).collect()))
 }
 
