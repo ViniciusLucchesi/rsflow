@@ -1,18 +1,18 @@
+use crate::domain::models::user_model::User;
+use crate::ports::database::user::UserRepository;
+use crate::ports::database::DatabaseError;
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
-use crate::core::models::user_model::User;
-use crate::core::interfaces::database::DatabaseError;
-use crate::core::interfaces::database::user::UserRepository;
+use std::sync::RwLock;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default)]
 pub struct InMemoryUserRepository {
-    data: Arc<RwLock<HashMap<String, Arc<RwLock<User>>>>>,
+    data: RwLock<HashMap<String, User>>,
 }
 
 impl InMemoryUserRepository {
     pub fn new() -> Self {
         InMemoryUserRepository {
-            data: Arc::new(RwLock::new(HashMap::new())),
+            data: RwLock::new(HashMap::new()),
         }
     }
 }
@@ -21,10 +21,9 @@ impl UserRepository for InMemoryUserRepository {
     fn get_user_by_id(&self, id: &str) -> Result<User, DatabaseError> {
         // Acquire read lock on the main HashMap
         let data = self.data.read().map_err(|_| DatabaseError::ReadLockError)?;
-        
-        // Acquire read lock on the specific User (if it exists)
-        if let Some(user_lock) = data.get(id) {
-            let user = user_lock.read().map_err(|_| DatabaseError::ReadLockError)?;
+
+        // Lookup the user and clone it
+        if let Some(user) = data.get(id) {
             Ok(user.clone())
         } else {
             Err(DatabaseError::UserNotFound)
@@ -36,8 +35,7 @@ impl UserRepository for InMemoryUserRepository {
         let data = self.data.read().map_err(|_| DatabaseError::ReadLockError)?;
 
         // Iterate over all entries and check by email
-        for user_lock in data.values() {
-            let user = user_lock.read().map_err(|_| DatabaseError::ReadLockError)?;
+        for user in data.values() {
             if user.email.value() == email {
                 return Ok(user.clone());
             }
@@ -50,32 +48,34 @@ impl UserRepository for InMemoryUserRepository {
         let data = self.data.read().map_err(|_| DatabaseError::ReadLockError)?;
 
         // Iterate over all entries and clone them
-        Ok(data.values().map(|user_lock| {
-            user_lock.read().map(|user| user.clone()).unwrap()
-        }).collect())
+        Ok(data.values().cloned().collect())
     }
-    
+
     fn create_user(&self, user: User) -> Result<User, DatabaseError> {
         // Acquire write lock on the main HashMap to insert a new user
-        let mut data = self.data.write().map_err(|_| DatabaseError::WriteLockError)?;
-        
+        let mut data = self
+            .data
+            .write()
+            .map_err(|_| DatabaseError::WriteLockError)?;
+
         if data.contains_key(&user.id.value().to_string()) {
             return Err(DatabaseError::UserAlreadyExists);
         }
 
-        // Insert the new user with an Arc<RwLock<User>>
-        data.insert(user.id.value().to_string().clone(), Arc::new(RwLock::new(user.clone())));
+        // Insert the new user
+        data.insert(user.id.value().to_string().clone(), user.clone());
         Ok(user)
     }
 
     fn update_user(&self, user: User) -> Result<User, DatabaseError> {
-        // Acquire read lock on the main HashMap to find the specific user
-        let data = self.data.read().map_err(|_| DatabaseError::ReadLockError)?;
+        // Acquire write lock to update the user
+        let mut data = self
+            .data
+            .write()
+            .map_err(|_| DatabaseError::WriteLockError)?;
 
-        if let Some(user_lock) = data.get(user.id.value()) {
-            // Acquire write lock on the specific User entry to modify it
-            let mut user_entry = user_lock.write().map_err(|_| DatabaseError::WriteLockError)?;
-            *user_entry = user.clone();
+        if data.contains_key(user.id.value()) {
+            data.insert(user.id.value().to_string(), user.clone());
             Ok(user)
         } else {
             Err(DatabaseError::UserNotFound)
@@ -84,12 +84,45 @@ impl UserRepository for InMemoryUserRepository {
 
     fn delete_user(&self, id: &str) -> Result<(), DatabaseError> {
         // Acquire write lock on the main HashMap to remove the user
-        let mut data = self.data.write().map_err(|_| DatabaseError::WriteLockError)?;
+        let mut data = self
+            .data
+            .write()
+            .map_err(|_| DatabaseError::WriteLockError)?;
 
         if data.remove(id).is_some() {
             Ok(())
         } else {
             Err(DatabaseError::UserNotFound)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::models::user_model::UserName;
+
+    #[test]
+    fn crud_flow() {
+        let repo = InMemoryUserRepository::new();
+        let user = User::new("Bob", "bob@example.com").unwrap();
+
+        let created = repo.create_user(user.clone()).unwrap();
+        assert_eq!(created.name.value(), "Bob");
+
+        let fetched = repo.get_user_by_id(user.id.value()).unwrap();
+        assert_eq!(fetched.email.value(), "bob@example.com");
+
+        let updated_user = User {
+            name: UserName::new("Bobby").unwrap(),
+            ..user.clone()
+        };
+        repo.update_user(updated_user.clone()).unwrap();
+
+        let after_update = repo.get_user_by_id(user.id.value()).unwrap();
+        assert_eq!(after_update.name.value(), "Bobby");
+
+        repo.delete_user(user.id.value()).unwrap();
+        assert!(repo.get_user_by_id(user.id.value()).is_err());
     }
 }

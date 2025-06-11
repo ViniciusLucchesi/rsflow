@@ -10,14 +10,13 @@ impl User {
         let id = UserId::new();
         let name = UserName::new(name)?;
         let email = UserEmail::new(email)?;
-        
-        Ok(User{ id, name, email })
+
+        Ok(User { id, name, email })
     }
 }
 
-
 #[derive(Debug, Clone)]
-pub struct UserId (String);
+pub struct UserId(String);
 
 impl UserId {
     pub fn new() -> Self {
@@ -32,7 +31,7 @@ impl UserId {
 }
 
 #[derive(Debug, Clone)]
-pub struct UserName (String);
+pub struct UserName(String);
 
 impl UserName {
     pub fn new(name: &str) -> Result<Self, &'static str> {
@@ -49,7 +48,7 @@ impl UserName {
 }
 
 #[derive(Debug, Clone)]
-pub struct UserEmail (String);
+pub struct UserEmail(String);
 
 impl UserEmail {
     fn new(email: &str) -> Result<Self, &'static str> {
@@ -66,7 +65,6 @@ impl UserEmail {
         &self.0
     }
 }
-
 
 #[cfg(test)]
 mod tests {
