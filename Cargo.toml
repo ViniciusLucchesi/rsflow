@@ -8,6 +8,7 @@ axum = "0.7.9"
 serde = { version = "1.0.215", features = ["derive"] }
 tokio = { version = "1.41.1", features = ["full"] }
 uuid = { version = "1.11.0", features = ["v7", "v4"] }
+async-trait = "0.1.88"
 
 [dev-dependencies]
 mockall = "0.12.1"
