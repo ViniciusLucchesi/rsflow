@@ -38,8 +38,8 @@ pub async fn create_user(
     State(service): State<Arc<dyn UserService>>,
     Json(payload): Json<CreateUserRequest>,
 ) -> Result<Json<UserResponse>, ApiError> {
-    let user = User::new(&payload.name, &payload.email).map_err(ApiError::from)?;
-    match service.create_user(user) {
+    let user = User::new(&payload.name, &payload.email).map_err(|e| e.to_string())?;
+    match service.create_user(user).await {
         Ok(created_user) => Ok(Json(UserResponse::from(created_user))),
         Err(e) => Err(e.into()),
     }
@@ -49,14 +49,18 @@ pub async fn get_user(
     State(service): State<Arc<dyn UserService>>,
     Path(id): Path<String>,
 ) -> Result<Json<UserResponse>, ApiError> {
-    let user = service.get_user_by_id(id).map_err(ApiError::from)?;
+    let user = service
+        .get_user_by_id(id)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(Json(UserResponse::from(user)))
 }
 
 pub async fn get_all_users(
     State(service): State<Arc<dyn UserService>>,
 ) -> Result<Json<Vec<UserResponse>>, ApiError> {
-    let users = service.get_all_users().map_err(ApiError::from)?;
+    let users = service.get_all_users().await.map_err(ApiError::from)?;
+
     Ok(Json(users.into_iter().map(UserResponse::from).collect()))
 }
 

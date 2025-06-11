@@ -1,6 +1,7 @@
 use crate::domain::models::user_model::User;
 use crate::ports::database::user::UserRepository;
 use crate::ports::database::DatabaseError;
+use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::RwLock;
 
@@ -17,8 +18,9 @@ impl InMemoryUserRepository {
     }
 }
 
+#[async_trait]
 impl UserRepository for InMemoryUserRepository {
-    fn get_user_by_id(&self, id: &str) -> Result<User, DatabaseError> {
+    async fn get_user_by_id(&self, id: &str) -> Result<User, DatabaseError> {
         // Acquire read lock on the main HashMap
         let data = self.data.read().map_err(|_| DatabaseError::ReadLockError)?;
 
@@ -30,7 +32,7 @@ impl UserRepository for InMemoryUserRepository {
         }
     }
 
-    fn get_user_by_email(&self, email: &str) -> Result<User, DatabaseError> {
+    async fn get_user_by_email(&self, email: &str) -> Result<User, DatabaseError> {
         // Acquire read lock on the main HashMap
         let data = self.data.read().map_err(|_| DatabaseError::ReadLockError)?;
 
@@ -43,7 +45,7 @@ impl UserRepository for InMemoryUserRepository {
         Err(DatabaseError::UserNotFound)
     }
 
-    fn get_all_users(&self) -> Result<Vec<User>, DatabaseError> {
+    async fn get_all_users(&self) -> Result<Vec<User>, DatabaseError> {
         // Acquire read lock on the main HashMap
         let data = self.data.read().map_err(|_| DatabaseError::ReadLockError)?;
 
@@ -51,7 +53,7 @@ impl UserRepository for InMemoryUserRepository {
         Ok(data.values().cloned().collect())
     }
 
-    fn create_user(&self, user: User) -> Result<User, DatabaseError> {
+    async fn create_user(&self, user: User) -> Result<User, DatabaseError> {
         // Acquire write lock on the main HashMap to insert a new user
         let mut data = self
             .data
@@ -67,7 +69,7 @@ impl UserRepository for InMemoryUserRepository {
         Ok(user)
     }
 
-    fn update_user(&self, user: User) -> Result<User, DatabaseError> {
+    async fn update_user(&self, user: User) -> Result<User, DatabaseError> {
         // Acquire write lock to update the user
         let mut data = self
             .data
@@ -82,7 +84,7 @@ impl UserRepository for InMemoryUserRepository {
         }
     }
 
-    fn delete_user(&self, id: &str) -> Result<(), DatabaseError> {
+    async fn delete_user(&self, id: &str) -> Result<(), DatabaseError> {
         // Acquire write lock on the main HashMap to remove the user
         let mut data = self
             .data
@@ -102,27 +104,27 @@ mod tests {
     use super::*;
     use crate::domain::models::user_model::UserName;
 
-    #[test]
-    fn crud_flow() {
+    #[tokio::test]
+    async fn crud_flow() {
         let repo = InMemoryUserRepository::new();
         let user = User::new("Bob", "bob@example.com").unwrap();
 
-        let created = repo.create_user(user.clone()).unwrap();
+        let created = repo.create_user(user.clone()).await.unwrap();
         assert_eq!(created.name.value(), "Bob");
 
-        let fetched = repo.get_user_by_id(user.id.value()).unwrap();
+        let fetched = repo.get_user_by_id(user.id.value()).await.unwrap();
         assert_eq!(fetched.email.value(), "bob@example.com");
 
         let updated_user = User {
             name: UserName::new("Bobby").unwrap(),
             ..user.clone()
         };
-        repo.update_user(updated_user.clone()).unwrap();
+        repo.update_user(updated_user.clone()).await.unwrap();
 
-        let after_update = repo.get_user_by_id(user.id.value()).unwrap();
+        let after_update = repo.get_user_by_id(user.id.value()).await.unwrap();
         assert_eq!(after_update.name.value(), "Bobby");
 
-        repo.delete_user(user.id.value()).unwrap();
-        assert!(repo.get_user_by_id(user.id.value()).is_err());
+        repo.delete_user(user.id.value()).await.unwrap();
+        assert!(repo.get_user_by_id(user.id.value()).await.is_err());
     }
 }
