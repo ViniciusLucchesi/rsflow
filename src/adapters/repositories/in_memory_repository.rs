@@ -63,7 +63,7 @@ impl UserRepository for InMemoryUserRepository {
         }
 
         // Insert the new user
-        data.insert(user.id.value().to_string().clone(), user.clone());
+        data.insert(user.id.value().to_string(), user.clone());
         Ok(user)
     }
 
