@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-use crate::core::models::user_model::User;
-use crate::core::interfaces::database::DatabaseError;
-use crate::core::interfaces::database::user::UserRepository;
+use crate::domain::models::user_model::User;
+use crate::ports::database::DatabaseError;
+use crate::ports::database::user::UserRepository;
 
 #[derive(Debug, Clone)]
 pub struct InMemoryUserRepository {

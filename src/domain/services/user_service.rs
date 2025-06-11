@@ -1,6 +1,6 @@
-use crate::core::models::user_model::User;
-use crate::core::interfaces::database::DatabaseError;
-use crate::core::interfaces::database::user::UserRepository;
+use crate::domain::models::user_model::User;
+use crate::ports::database::DatabaseError;
+use crate::ports::database::user::UserRepository;
 
 
 pub struct UserService {

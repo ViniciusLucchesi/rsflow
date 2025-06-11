@@ -4,8 +4,8 @@ use axum::extract::{Path, State};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-use crate::core::services::user_service::UserService;
-use crate::core::models::user_model::User;
+use crate::domain::services::user_service::UserService;
+use crate::domain::models::user_model::User;
 
 #[derive(Serialize, Deserialize)]
 pub struct CreateUserRequest {

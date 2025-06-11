@@ -1,11 +1,11 @@
-mod core;
+mod domain;
+mod ports;
 mod adapters;
-mod infrastructure;
 
 use std::sync::Arc;
-use core::services::user_service::UserService;
+use domain::services::user_service::UserService;
 use adapters::repositories::in_memory_repository::InMemoryUserRepository;
-use infrastructure::api::handlers::{config_handler};
+use adapters::api::handlers::config_handler;
 
 #[tokio::main]
 async fn main() {

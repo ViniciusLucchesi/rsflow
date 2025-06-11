@@ -33,13 +33,14 @@ Here's how the repository is structured:
 
 ```
 src/
-├── core/                  # The "core" of the application
-│   ├── interfaces/        # Abstractions for repositories and databases
-│   ├── models/            # Business entities like User
+├── domain/                # Business entities and services
+│   ├── models/            # Core models like User
 │   └── services/          # Domain logic, e.g., UserService
+├── ports/                 # Traits and interfaces
+│   └── database/          # Repository abstractions
 ├── adapters/              # Infrastructure implementations
+│   ├── api/               # HTTP layer (REST API)
 │   └── repositories/      # Concrete repository, e.g., InMemoryUserRepository
-├── api/                   # HTTP layer (REST API)
 └── main.rs                # Application entry point
 ```
 

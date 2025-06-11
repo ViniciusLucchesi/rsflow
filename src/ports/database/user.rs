@@ -1,5 +1,5 @@
-use crate::core::models::user_model::User;
-use crate::core::interfaces::database::DatabaseError;
+use crate::domain::models::user_model::User;
+use crate::ports::database::DatabaseError;
 
 pub trait UserRepository {
     fn get_user_by_id(&self, id: &str) -> Result<User, DatabaseError>;
