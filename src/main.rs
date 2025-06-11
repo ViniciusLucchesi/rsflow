@@ -1,10 +1,7 @@
-mod adapters;
-mod domain;
-mod ports;
+use rsflow::adapters::api::handlers::config_handler;
+use rsflow::adapters::repositories::in_memory_repository::InMemoryUserRepository;
+use rsflow::domain::services::user_service::{UserService, UserServiceImpl};
 
-use adapters::api::handlers::config_handler;
-use adapters::repositories::in_memory_repository::InMemoryUserRepository;
-use domain::services::user_service::{UserService, UserServiceImpl};
 use std::sync::Arc;
 
 #[tokio::main]
