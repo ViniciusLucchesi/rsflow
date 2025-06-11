@@ -1,5 +1,5 @@
 use crate::domain::models::user_model::User;
-use crate::ports::database::user::UserRepository;
+use crate::ports::database::user::{UserReadRepository, UserWriteRepository};
 use crate::ports::database::DatabaseError;
 use async_trait::async_trait;
 
@@ -14,48 +14,55 @@ pub trait UserService: Send + Sync {
 }
 
 pub struct UserServiceImpl {
-    data: Box<dyn UserRepository + Send + Sync>,
+    read_repo: std::sync::Arc<dyn UserReadRepository + Send + Sync>,
+    write_repo: std::sync::Arc<dyn UserWriteRepository + Send + Sync>,
 }
 
 impl UserServiceImpl {
     pub fn new<T>(repository: T) -> Self
     where
-        T: UserRepository + Send + Sync + 'static,
+        T: UserReadRepository + UserWriteRepository + Send + Sync + 'static,
     {
+        let repo = std::sync::Arc::new(repository);
         UserServiceImpl {
-            data: Box::new(repository),
+            read_repo: repo.clone(),
+            write_repo: repo,
         }
     }
 
-    pub fn repository(&self) -> &dyn UserRepository {
-        &*self.data
+    pub fn read_repository(&self) -> &dyn UserReadRepository {
+        &*self.read_repo
+    }
+
+    pub fn write_repository(&self) -> &dyn UserWriteRepository {
+        &*self.write_repo
     }
 }
 
 #[async_trait]
 impl UserService for UserServiceImpl {
     async fn get_user_by_id(&self, id: String) -> Result<User, DatabaseError> {
-        self.data.get_user_by_id(&id).await
+        self.read_repo.get_user_by_id(&id).await
     }
 
     async fn get_user_by_email(&self, email: &str) -> Result<User, DatabaseError> {
-        self.data.get_user_by_email(email).await
+        self.read_repo.get_user_by_email(email).await
     }
 
     async fn get_all_users(&self) -> Result<Vec<User>, DatabaseError> {
-        self.data.get_all_users().await
+        self.read_repo.get_all_users().await
     }
 
     async fn create_user(&self, user: User) -> Result<User, DatabaseError> {
-        self.data.create_user(user).await
+        self.write_repo.create_user(user).await
     }
 
     async fn update_user(&self, user: User) -> Result<User, DatabaseError> {
-        self.data.update_user(user).await
+        self.write_repo.update_user(user).await
     }
 
     async fn delete_user(&self, id: String) -> Result<(), DatabaseError> {
-        self.data.delete_user(&id).await
+        self.write_repo.delete_user(&id).await
     }
 }
 
@@ -68,7 +75,7 @@ mod tests {
     struct DummyRepo;
 
     #[async_trait]
-    impl UserRepository for DummyRepo {
+    impl UserReadRepository for DummyRepo {
         async fn get_user_by_id(&self, _id: &str) -> Result<User, DatabaseError> {
             unimplemented!()
         }
@@ -80,7 +87,10 @@ mod tests {
         async fn get_all_users(&self) -> Result<Vec<User>, DatabaseError> {
             unimplemented!()
         }
+    }
 
+    #[async_trait]
+    impl UserWriteRepository for DummyRepo {
         async fn create_user(&self, user: User) -> Result<User, DatabaseError> {
             Ok(user)
         }
