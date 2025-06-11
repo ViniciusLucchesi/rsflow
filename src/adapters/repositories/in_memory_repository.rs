@@ -1,5 +1,5 @@
 use crate::domain::models::user_model::User;
-use crate::ports::database::user::UserRepository;
+use crate::ports::database::user::{UserReadRepository, UserWriteRepository};
 use crate::ports::database::DatabaseError;
 use async_trait::async_trait;
 use std::collections::HashMap;
@@ -19,7 +19,7 @@ impl InMemoryUserRepository {
 }
 
 #[async_trait]
-impl UserRepository for InMemoryUserRepository {
+impl UserReadRepository for InMemoryUserRepository {
     async fn get_user_by_id(&self, id: &str) -> Result<User, DatabaseError> {
         // Acquire read lock on the main HashMap
         let data = self.data.read().map_err(|_| DatabaseError::ReadLockError)?;
@@ -52,7 +52,10 @@ impl UserRepository for InMemoryUserRepository {
         // Iterate over all entries and clone them
         Ok(data.values().cloned().collect())
     }
+}
 
+#[async_trait]
+impl UserWriteRepository for InMemoryUserRepository {
     async fn create_user(&self, user: User) -> Result<User, DatabaseError> {
         // Acquire write lock on the main HashMap to insert a new user
         let mut data = self
