@@ -1,16 +1,16 @@
-mod core;
 mod adapters;
-mod infrastructure;
+mod domain;
+mod ports;
 
-use std::sync::Arc;
-use core::services::user_service::UserService;
+use adapters::api::handlers::config_handler;
 use adapters::repositories::in_memory_repository::InMemoryUserRepository;
-use infrastructure::api::handlers::{config_handler};
+use domain::services::user_service::{UserService, UserServiceImpl};
+use std::sync::Arc;
 
 #[tokio::main]
 async fn main() {
     let repository = InMemoryUserRepository::new();
-    let user_service = Arc::new(UserService::new(repository));
+    let user_service: Arc<dyn UserService> = Arc::new(UserServiceImpl::new(repository));
 
     let app = config_handler(user_service);
 

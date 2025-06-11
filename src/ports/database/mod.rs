@@ -4,7 +4,7 @@ pub mod user;
 pub enum DatabaseError {
     ConnectionError,
     NotFoundError,
-    
+
     UserNotFound,
     UserAlreadyExists,
 

@@ -33,15 +33,20 @@ Here's how the repository is structured:
 
 ```
 src/
-├── core/                  # The "core" of the application
-│   ├── interfaces/        # Abstractions for repositories and databases
-│   ├── models/            # Business entities like User
-│   └── services/          # Domain logic, e.g., UserService
-├── adapters/              # Infrastructure implementations
-│   └── repositories/      # Concrete repository, e.g., InMemoryUserRepository
-├── api/                   # HTTP layer (REST API)
+├── domain/                # Business entities and services
+│   ├── models/            # Core data structures
+│   └── services/          # Domain logic
+├── ports/                 # Traits used as application ports
+│   └── database/          # Repository interfaces
+├── adapters/              # Implementations of ports
+│   ├── api/               # HTTP layer (REST API)
+│   └── repositories/      # e.g., InMemoryUserRepository
 └── main.rs                # Application entry point
 ```
+
+Domain services depend only on the traits defined in `ports`. Adapters implement
+these traits and are injected at runtime, enabling easy swapping of
+implementations.
 
 ---
 
@@ -74,13 +79,20 @@ src/
 ## 📚 How It Works
 
 ### 👩‍💻 Core Logic
-- The **UserService** handles business logic and uses abstract **UserRepository** traits to interact with data.
+- The `UserService` trait defines operations for managing users.
+- `UserServiceImpl` implements this trait and depends on a repository that
+  implements `UserRepository`.
 
 ### 🛠️ Adapter
-- **InMemoryUserRepository** provides a concrete, fast, and lightweight implementation for testing and local development.
+- **InMemoryUserRepository** provides a concrete, fast, and lightweight
+  implementation for testing and local development.
+  Different repositories can be injected in `main.rs` by creating another
+  struct that implements `UserRepository` and passing it to `UserServiceImpl::new`.
 
 ### 🌐 API
 - RESTful routes expose core operations like creating, reading, updating, and deleting users.
+  Handlers receive a boxed `UserService` trait object, allowing different service
+  implementations to be injected without changing the HTTP layer.
 
 ---
 
