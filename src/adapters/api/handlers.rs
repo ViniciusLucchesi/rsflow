@@ -17,7 +17,7 @@ pub struct CreateUserRequest {
     pub email: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct UserResponse {
     pub id: String,
     pub name: String,
@@ -38,21 +38,16 @@ pub async fn create_user(
     State(service): State<Arc<dyn UserService>>,
     Json(payload): Json<CreateUserRequest>,
 ) -> Result<Json<UserResponse>, ApiError> {
-    let user = User::new(&payload.name, &payload.email).map_err(|e| e.to_string())?;
-    match service.create_user(user).await {
-        Ok(created_user) => Ok(Json(UserResponse::from(created_user))),
-        Err(e) => Err(e.into()),
-    }
+    let user = User::new(&payload.name, &payload.email)?;
+    let created_user = service.create_user(user).await?;
+    Ok(Json(UserResponse::from(created_user)))
 }
 
 pub async fn get_user(
     State(service): State<Arc<dyn UserService>>,
     Path(id): Path<String>,
 ) -> Result<Json<UserResponse>, ApiError> {
-    let user = service
-        .get_user_by_id(id)
-        .await
-        .map_err(|e| e.to_string())?;
+    let user = service.get_user_by_id(id).await?;
     Ok(Json(UserResponse::from(user)))
 }
 
